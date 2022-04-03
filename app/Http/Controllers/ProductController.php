@@ -19,42 +19,47 @@ class ProductController extends Controller
     {
         $products_query = Product::query();
 
-        //dd(request()->all());
+        $filter_variants =  Variant::with(['product_variants' => function ($query) {
+            $query->groupBy('variant')
+                ->orderBy('id', 'asc');
+        }])->get();
+
 
         if (request()->has('title') && request()->get('title') != "") {
             $products_query->where('title', 'like', "%" . request()->get('title') . "%");
         }
 
         if (request()->has('price_from') && request()->get('price_from') != "") {
-            $products_query->whereIn('id', function ($query)  {
+            $products_query->whereIn('id', function ($query) {
                 $query->select('product_id')
                     ->from(with(new ProductVariantPrice())->getTable())
-                    ->where('price','>=', request()->get('price_from'));
+                    ->where('price', '>=', request()->get('price_from'));
             });
         }
 
         if (request()->has('price_to') && request()->get('price_to') != "") {
-            $products_query->whereIn('id', function ($query)  {
+            $products_query->whereIn('id', function ($query) {
                 $query->select('product_id')
                     ->from(with(new ProductVariantPrice())->getTable())
-                    ->where('price','<=', request()->get('price_to'));
+                    ->where('price', '<=', request()->get('price_to'));
             });
         }
 
         if (request()->has('date') && request()->get('date') != "") {
-            $products_query->where('created_at', 'like', "%".request()->get('date') . "%");
+            $products_query->where('created_at', 'like', "%" . request()->get('date') . "%");
+        }
+
+        if (request()->has('variant') && request()->get('variant') != "") {
+            $products_query->whereIn('id', function ($query) {
+                $query->select('product_id')
+                    ->from(with(new ProductVariant())->getTable())
+                    ->where('variant_id', '=', request()->get('variant'));
+            });
         }
 
         $products = $products_query->paginate(5);
 
-        // foreach ($products as $key => $product) {
-        //     echo "<pre>";
-        //     var_dump($product->VARIANTDATA);
-        //     echo "</pre>";
-        // }
-
-        // die();
-        return view('products.index', compact('products'));
+        return view('products.index', compact('products','filter_variants'));
     }
 
     /**
