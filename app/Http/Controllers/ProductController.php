@@ -19,8 +19,33 @@ class ProductController extends Controller
     {
         $products_query = Product::query();
 
+        //dd(request()->all());
 
-        $products = $products_query->paginate(10);
+        if (request()->has('title') && request()->get('title') != "") {
+            $products_query->where('title', 'like', "%" . request()->get('title') . "%");
+        }
+
+        if (request()->has('price_from') && request()->get('price_from') != "") {
+            $products_query->whereIn('id', function ($query)  {
+                $query->select('product_id')
+                    ->from(with(new ProductVariantPrice())->getTable())
+                    ->where('price','>=', request()->get('price_from'));
+            });
+        }
+
+        if (request()->has('price_to') && request()->get('price_to') != "") {
+            $products_query->whereIn('id', function ($query)  {
+                $query->select('product_id')
+                    ->from(with(new ProductVariantPrice())->getTable())
+                    ->where('price','<=', request()->get('price_to'));
+            });
+        }
+
+        if (request()->has('date') && request()->get('date') != "") {
+            $products_query->where('created_at', 'like', "%".request()->get('date') . "%");
+        }
+
+        $products = $products_query->paginate(5);
 
         // foreach ($products as $key => $product) {
         //     echo "<pre>";
@@ -29,7 +54,7 @@ class ProductController extends Controller
         // }
 
         // die();
-        return view('products.index',compact('products'));
+        return view('products.index', compact('products'));
     }
 
     /**
@@ -51,7 +76,6 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-
     }
 
 
@@ -63,7 +87,6 @@ class ProductController extends Controller
      */
     public function show($product)
     {
-
     }
 
     /**
