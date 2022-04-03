@@ -17,7 +17,19 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return view('products.index');
+        $products_query = Product::query();
+
+
+        $products = $products_query->paginate(10);
+
+        // foreach ($products as $key => $product) {
+        //     echo "<pre>";
+        //     var_dump($product->VARIANTDATA);
+        //     echo "</pre>";
+        // }
+
+        // die();
+        return view('products.index',compact('products'));
     }
 
     /**
