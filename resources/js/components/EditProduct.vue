@@ -223,7 +223,7 @@ export default {
                 } else {
                     this.form_error.status = false;
                     this.form_error.message = "";
-                    alert("Product Uploaded !")
+                    alert("Product Updated !")
                     window.location.reload();
                 }
             }).catch(error => {

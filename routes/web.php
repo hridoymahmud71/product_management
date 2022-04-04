@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('product', 'ProductController');
     Route::post('/product-image-upload', 'ProductController@product_image_upload')->name('product_image_upload');
     Route::post('/product-image-delete', 'ProductController@product_image_delete')->name('product_image_delete');
+    Route::post('/product-update', 'ProductController@product_update')->name('product_update');
 
     Route::resource('blog', 'BlogController');
     Route::resource('blog-category', 'BlogCategoryController');

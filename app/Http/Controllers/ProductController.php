@@ -170,12 +170,10 @@ class ProductController extends Controller
             }
         }
 
-        if (Product::where('sku', $request->sku)->first() != null) {
-            return response()->json([
-                'result'        =>  true,
-                'message'       => "Product Uploaded",
-            ]);
-        }
+        return response()->json([
+            'result'        =>  true,
+            'message'       => "Product Uploaded",
+        ]);
     }
 
     public function product_image_upload(Request $request)
@@ -306,8 +304,7 @@ class ProductController extends Controller
      */
     public function product_update(Request $request)
     {
-        dd($request->all());
-
+        
         $product =  Product::find($request->id);
 
         if ($request->title == ""  || $request->sku == "") {
@@ -317,7 +314,7 @@ class ProductController extends Controller
             ]);
         }
 
-        if (Product::where('sku', $request->sku)->first() != null) {
+        if (Product::where('sku', $request->sku)->where('id','!=',$product->id)->first() != null) {
             return response()->json([
                 'result'        =>  false,
                 'message'       => "sku already exists",
@@ -337,7 +334,7 @@ class ProductController extends Controller
         $product->description = $request->description;
         $product->save();
 
-
+        
         //then save product image , if any
         if (!empty($request->product_image)) {
             foreach ($request->product_image as  $an_image) {
@@ -348,9 +345,10 @@ class ProductController extends Controller
                 $product_image->save();
             }
         }
+        
 
-        $product->product_variants->delete();
-        $product->product_variant_prices->delete();
+        $product->product_variants()->delete();
+        $product->product_variant_prices()->delete();
 
 
         //then save product variants
@@ -397,12 +395,12 @@ class ProductController extends Controller
             }
         }
 
-        if (Product::where('sku', $request->sku)->first() != null) {
-            return response()->json([
-                'result'        =>  true,
-                'message'       => "Product Updated",
-            ]);
-        }
+        return response()->json([
+            'result'        =>  true,
+            'message'       => "Product Updated",
+        ]);
+
+        
     }
 
     /**
