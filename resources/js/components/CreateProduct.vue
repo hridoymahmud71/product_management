@@ -1,5 +1,8 @@
 <template>
     <section>
+        <div class="alert alert-danger" role="alert" v-if="form_error.status">
+            {{form_error.message}}
+        </div>        
         <div class="row">
             <div class="col-md-6">
                 <div class="card shadow mb-4">
@@ -24,7 +27,12 @@
                         <h6 class="m-0 font-weight-bold text-primary">Media</h6>
                     </div>
                     <div class="card-body border">
-                        <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions"></vue-dropzone>
+                        <vue-dropzone
+                            ref="myVueDropzone"
+                            id="dropzone"
+                            @vdropzone-success="completed_upload"
+                            :options="dropzoneOptions"
+                        ></vue-dropzone>
                     </div>
                 </div>
             </div>
@@ -77,10 +85,10 @@
                                 <tr v-for="variant_price in product_variant_prices">
                                     <td>{{ variant_price.title }}</td>
                                     <td>
-                                        <input type="text" class="form-control" v-model="variant_price.price">
+                                        <input type="number" min="0" step="0.01" class="form-control" v-model="variant_price.price">
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control" v-model="variant_price.stock">
+                                        <input type="number" min="0" step="1" class="form-control" v-model="variant_price.stock">
                                     </td>
                                 </tr>
                                 </tbody>
@@ -114,6 +122,10 @@ export default {
     },
     data() {
         return {
+            form_error:{
+                status:false,
+                message:""
+            },
             product_name: '',
             product_sku: '',
             description: '',
@@ -126,8 +138,9 @@ export default {
             ],
             product_variant_prices: [],
             dropzoneOptions: {
-                url: 'https://httpbin.org/post',
+                url: '/product-image-upload',
                 thumbnailWidth: 150,
+                acceptedFiles:"image/*",
                 maxFilesize: 0.5,
                 headers: {"My-Awesome-Header": "header value"}
             }
@@ -179,6 +192,7 @@ export default {
 
         // store product into database
         saveProduct() {
+
             let product = {
                 title: this.product_name,
                 sku: this.product_sku,
@@ -188,15 +202,29 @@ export default {
                 product_variant_prices: this.product_variant_prices
             }
 
-
             axios.post('/product', product).then(response => {
                 console.log(response.data);
+                if(response.data.result == false){
+                    this.form_error.status = true;
+                    this.form_error.message = response.data.message;
+                     alert("Check error message on top of the form");
+                } else {
+                    this.form_error.status = false;
+                    this.form_error.message = "";
+                    alert("Product Uploaded !")
+                    window.location.reload();
+                }
             }).catch(error => {
                 console.log(error);
+                this.form_error.status = true;
+                this.form_error.message = "Something went wrong"
             })
 
             console.log(product);
-        }
+        },
+        completed_upload(file,response){            
+            this.images.push(response);
+        },
 
 
     },

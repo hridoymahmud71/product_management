@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\ProductVariantPrice;
+use App\Models\TempImage;
 use App\Models\Variant;
 use Illuminate\Http\Request;
 
@@ -59,7 +61,7 @@ class ProductController extends Controller
 
         $products = $products_query->paginate(5);
 
-        return view('products.index', compact('products','filter_variants'));
+        return view('products.index', compact('products', 'filter_variants'));
     }
 
     /**
@@ -81,6 +83,111 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+
+        if($request->title == ""  || $request->sku == ""){
+            return response()->json([
+                'result'        =>  false,
+                'message'       => "Need product name and sku",                
+            ]);
+        }
+
+        if(Product::where('sku',$request->sku)->first() != null){
+            return response()->json([
+                'result'        =>  false,
+                'message'       => "sku already exists",                
+            ]);
+        }
+
+        if(empty($request->product_variant) || empty($request->product_variant_prices)){
+            return response()->json([
+                'result'        =>  false,
+                'message'       => "need variation and prices",                
+            ]);
+        }
+    
+        // save product
+        $product = new Product;
+        $product->title = $request->title;
+        $product->sku = $request->sku;
+        $product->description = $request->description;
+        $product->save();
+
+
+        //then save product image , if any
+        if (!empty($request->product_image)) {
+            foreach ($request->product_image as  $an_image) {
+                $product_image = new ProductImage;
+                $product_image->file_path = $an_image;
+                $product_image->thumbnail = 0;
+                $product_image->product_id = $product->id;
+                $product_image->save();
+            }
+        }
+
+      
+
+        //then save product variants
+        if (!empty($request->product_variant)) {
+            foreach ($request->product_variant as  $a_variant) {
+                foreach ($a_variant['tags'] as  $a_tag) {
+                    $product_variant = new ProductVariant;
+                    $product_variant->variant  = $a_tag;
+                    $product_variant->variant_id  = $a_variant['option'];
+                    $product_variant->product_id  =  $product->id;
+                    $product_variant->save();
+                }
+            }
+        }
+
+        //then save product variant prices
+        if (!empty($request->product_variant_prices)) {
+            foreach ($request->product_variant_prices as  $a_variant_price) {
+                $product_variant_one = null;
+                $product_variant_two = null;
+                $product_variant_three = null;
+                $title =  substr($a_variant_price['title'], 0, -1); // removing last '/'
+                $title_array = explode('/', $title);
+                foreach ($title_array as $key => $item) {
+                    if($key == 0){
+                        $product_variant_one = ProductVariant::where('product_id',$product->id)->where('variant',$item)->first()->id;
+                    }
+                    if($key == 1){
+                        $product_variant_two = ProductVariant::where('product_id',$product->id)->where('variant',$item)->first()->id;
+                    }
+                    if($key == 2){
+                        $product_variant_three = ProductVariant::where('product_id',$product->id)->where('variant',$item)->first()->id;
+                    }
+                }
+
+                $product_variant_price = new ProductVariantPrice;
+                $product_variant_price->product_variant_one = $product_variant_one;
+                $product_variant_price->product_variant_two = $product_variant_two;
+                $product_variant_price->product_variant_three = $product_variant_three;
+                $product_variant_price->price = $a_variant_price['price'];
+                $product_variant_price->stock = $a_variant_price['stock'];
+                $product_variant_price->product_id = $product->id;
+                $product_variant_price->save();
+
+            }
+        }
+
+        if(Product::where('sku',$request->sku)->first() != null){
+            return response()->json([
+                'result'        =>  true,
+                'message'       => "Product Uploaded",                
+            ]);
+        }
+    }
+
+    public function product_image_upload(Request $request)
+    {
+        if ($request->hasFile('file')) {
+            $path = $request->file('file')->store('uploads');
+
+
+
+            return $path;
+        }
     }
 
 
